@@ -1,0 +1,9 @@
+/devel/
+/setup.sh
+/micapipe/examples/
+/micapipe/pipeline_struct/logs/
+/micapipe/pipeline_func/logs/
+/data/mica_processed/
+/data/NIfTIs/
+/data/sub-1153_re-submission/
+/analysis/
