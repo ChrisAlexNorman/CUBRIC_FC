@@ -1,8 +1,9 @@
+/data/
+/analysis/
 /devel/
+/.virtualenv/
 /setup.sh
 /micapipe/examples/
 /micapipe/pipeline_struct/logs/
 /micapipe/pipeline_func/logs/
 /micapipe/fsaverage_extension/logs/
-/data/
-/analysis/

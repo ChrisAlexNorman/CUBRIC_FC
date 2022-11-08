@@ -15,3 +15,12 @@ The [dcm2niix](https://github.com/rordenlab/dcm2niix) tool was used to converted
 Reverse phase encoding resting state scan were used, where available, to unwarp resting state and movie functional scans for each subject. This step was performed by Hikaru Tsujimura (tsujimuraH@cardiff.ac.uk) using the [topup](https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/topup/TopupUsersGuide/) utility. Unwarped data was moved to alongside the original, unwarped NIfTI files.
 
 The [micapipe toolbox](https://micapipe.readthedocs.io/en/latest/pages/01.whatyouneed/index.html) was used to process structural and functional NIfTI data using established pipelines, see *micapipe/README.md*. The outputs are stored in *data/mica_processed*.
+
+## Environment ##
+| *Software* | *Version*     | *Further info* |
+|------------|---------------|----------------|
+| dcm2niix   | v1.0.20200331 | https://github.com/rordenlab/dcm2niix |
+| micapipe   | 0.1.2         | https://www.python.org/downloads/ |
+| python     | 3.7.15        | https://www.python.org/downloads/ |
+
+See *requirements.txt* for python packages.
