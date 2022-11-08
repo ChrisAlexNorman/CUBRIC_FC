@@ -20,7 +20,7 @@ The [micapipe toolbox](https://micapipe.readthedocs.io/en/latest/pages/01.whatyo
 | *Software* | *Version*     | *Further info* |
 |------------|---------------|----------------|
 | dcm2niix   | v1.0.20200331 | https://github.com/rordenlab/dcm2niix |
-| micapipe   | 0.1.2         | https://www.python.org/downloads/ |
+| micapipe   | 0.1.2         | https://micapipe.readthedocs.io/en/latest/ |
 | python     | 3.7.15        | https://www.python.org/downloads/ |
 
 See *requirements.txt* for python packages.
