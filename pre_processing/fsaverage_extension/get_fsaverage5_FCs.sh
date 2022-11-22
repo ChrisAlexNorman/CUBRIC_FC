@@ -7,15 +7,16 @@
 # SETTINGS
 DATA_DIR=/scratch/scw1648/proj_cn/data/mica_processed/micapipe
 LINK_FIL=/scratch/scw1648/proj_cn/data/FileIndicators.csv
-PARC_DIR=/scratch/scw1648/proj_cn/atlas_parcs/HCP-MMP1
+PARC_DIR=/scratch/scw1648/proj_cn/parcellations/HCP-MMP1
 PARC_FIL=micapipe_fsaverage5_glasser-360.annot
 PARC_NAM=glasser-360
-PY_FIL=/scratch/scw1648/proj_cn/micapipe/get_fsaverage5_FC.py
+PY_FIL=/scratch/scw1648/proj_cn/pre_processing/fsaverage_extension/get_fsaverage5_FC.py
 
 TODAY=$(date +"%Y-%m-%d")
 
-source ~/.virtualenvs/ALSPAC-ENV/bin/activate
 module load python/3.7.0
+source ~/.virtualenvs/CardiffFC/bin/activate
+
 ######
 # MAIN
 OLDIFS=$IFS # Keep these safe for now
@@ -24,17 +25,16 @@ IFS=','
 { read
 while read ID T1 RS RS_PA movie
 do
-    if [ "$ID" == "1153" ]; then
-	continue
-    fi
 
     SUBJ="sub-$ID"
 
     if [ "$RS" == "1" ]; then
-	SESS=rest
-	FUNC_DIR="${DATA_DIR}/${SUBJ}/func/${SESS}"
-	LOG_FIL="${DATA_DIR}/${SUBJ}/logs/CN_fsaverage5_${SESS}_${TODAY}.log"
-	python3 $PY_FIL "$SUBJ" "$FUNC_DIR" "$PARC_DIR" "$PARC_FIL" "$PARC_NAM" > "$LOG_FIL"
+	if [ "$ID" != "1153" ]; then
+	    SESS=rest
+	    FUNC_DIR="${DATA_DIR}/${SUBJ}/func/${SESS}"
+	    LOG_FIL="${DATA_DIR}/${SUBJ}/logs/CN_fsaverage5_${SESS}_${TODAY}.log"
+	    python3 $PY_FIL "$SUBJ" "$FUNC_DIR" "$PARC_DIR" "$PARC_FIL" "$PARC_NAM" > "$LOG_FIL"
+	fi
     fi
 
     if [ "$movie" == "1" ]; then
