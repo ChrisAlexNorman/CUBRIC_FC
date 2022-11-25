@@ -3,7 +3,10 @@
 /devel/
 /.virtualenv/
 /setup.sh
-/micapipe/examples/
-/micapipe/pipeline_struct/logs/
-/micapipe/pipeline_func/logs/
-/micapipe/fsaverage_extension/logs/
+/pre_processing/examples/
+/pre_processing/pipeline_struct/logs/
+/pre_processing/pipeline_func/logs/
+/pre_processing/fsaverage_extension/logs/
+/gradients/logs/
+/gradients/tests/
+/gradients/figures/
