@@ -47,68 +47,68 @@ def remove_unconnected_rois(FC):
     return FC_reduced, ind_zero_sym
 
 ############ Proj 337 FC ############
-# print('------Proj. 337 Correlations------')
-# fc_mean_337_raw = np.loadtxt(open(fc_337_fil,"r"),delimiter=',')
-# # Remove unconnected regions in proj 337 matrix to protect gradient estimation
-# fc_mean_337, ind_zero_337 = remove_unconnected_rois(fc_mean_337_raw)
+print('------Proj. 337 Correlations------')
+fc_mean_337_raw = np.loadtxt(open(fc_337_fil,"r"),delimiter=',')
+# Remove unconnected regions in proj 337 matrix to protect gradient estimation
+fc_mean_337, ind_zero_337 = remove_unconnected_rois(fc_mean_337_raw)
 
-# # Get gradients
-# gm_337 = GradientMaps(n_components = n_components,
-#         approach = approach,
-#         kernel = kernel,
-#         random_state = random_state)
-# gm_337.fit(fc_mean_337)
-# # replace unconnected indices
-# grads_337 = np.zeros((n_reg,n_components)) * np.nan
-# ind_valid_alspac = np.setdiff1d(np.arange(0, n_reg), ind_zero_337)   
-# grads_337[np.ix_(ind_valid_alspac, np.arange(0, n_components))] = gm_337.gradients_  
+# Get gradients
+gm_337 = GradientMaps(n_components = n_components,
+        approach = approach,
+        kernel = kernel,
+        random_state = random_state)
+gm_337.fit(fc_mean_337)
+# replace unconnected indices
+grads_337 = np.zeros((n_reg,n_components)) * np.nan
+ind_valid_alspac = np.setdiff1d(np.arange(0, n_reg), ind_zero_337)   
+grads_337[np.ix_(ind_valid_alspac, np.arange(0, n_components))] = gm_337.gradients_  
 
-# # Get raw correlations
-# corrs_r_337 = np.zeros(n_components)
-# corrs_p_337 = np.zeros(n_components)
-# for grad in range(0,n_components):
-#     corrs_r_337[grad], corrs_p_337[grad] = spearmanr(sc_isv,grads_337[:,grad],nan_policy='omit')
-# print('rho:',corrs_r_337)
-# print('p:',corrs_p_337)
-# # Illustrate
-# fig_337, ax_337 = plt.subplots(3,1,figsize=(8,6))
-# ax = ax_337[0]
-# ax.plot(range(1,n_components+1),corrs_r_337,'k.-',ms=10)
-# ax.plot([1,n_components],[0,0],'k.--')
-# ax.set_xticks(range(1,n_components+1))
-# yl1 = ax.get_ylim()
-# ax.set_ylabel('Corr. Coeff.')
-# ax = ax_337[1]
-# ax.plot(range(1,n_components+1),corrs_p_337,'k.',ls='-',ms=10)
-# ax.set_xticks(range(1,n_components+1))
-# ax.set_ylim([0,1])
-# ax.set_ylabel('p value')
-# # ax.set_title('Proj. 337 - Raw SC-ISV')
+# Get raw correlations
+corrs_r_337 = np.zeros(n_components)
+corrs_p_337 = np.zeros(n_components)
+for grad in range(0,n_components):
+    corrs_r_337[grad], corrs_p_337[grad] = spearmanr(sc_isv,grads_337[:,grad],nan_policy='omit')
+print('rho:',corrs_r_337)
+print('p:',corrs_p_337)
+# Illustrate
+fig_337, ax_337 = plt.subplots(3,1,figsize=(8,6))
+ax = ax_337[0]
+ax.plot(range(1,n_components+1),corrs_r_337,'k.-',ms=10)
+ax.plot([1,n_components],[0,0],'k.--')
+ax.set_xticks(range(1,n_components+1))
+yl1 = ax.get_ylim()
+ax.set_ylabel('Corr. Coeff.')
+ax = ax_337[1]
+ax.plot(range(1,n_components+1),corrs_p_337,'k.',ls='-',ms=10)
+ax.set_xticks(range(1,n_components+1))
+ax.set_ylim([0,1])
+ax.set_ylabel('p value')
+# ax.set_title('Proj. 337 - Raw SC-ISV')
 
-# # Check correlations using surrogate maps
-# corrs_r_337_surr = np.zeros((n_surr,n_components))
-# corrs_p_337_surr = np.zeros((n_surr,n_components))
-# for surr in range(0,n_surr):
-#     for grad in range(0,n_components):
-#         corrs_r_337_surr[surr,grad], corrs_p_337_surr[surr,grad] = spearmanr(sc_isv_surr[:,surr],grads_337[:,grad],nan_policy='omit')
-# corrs_r_337_mean = np.mean(corrs_r_337_surr,axis=0)
-# corrs_r_337_lower = np.percentile(corrs_r_337_surr,(100-ci)/2,axis=0)
-# corrs_r_337_upper = np.percentile(corrs_r_337_surr,(100+ci)/2,axis=0)
-# corrs_r_337_bounds = np.row_stack((corrs_r_337_mean-corrs_r_337_lower,corrs_r_337_upper-corrs_r_337_mean))
-# # Illustrate
-# ax = ax_337[2]
-# ax.errorbar(np.asarray(range(1,n_components+1)),corrs_r_337_mean,corrs_r_337_bounds,ls='none',color='k')
-# ax.plot(np.asarray(range(1,n_components+1)),corrs_r_337_mean,marker='.',markersize=10,ls='none',color='k')
-# ax.plot([1,n_components],[0,0],'k--')
-# ax.set_xticks(range(1,n_components+1))
-# yl2 = ax.get_ylim()
-# ax.set_xlabel('Component')
-# ax.set_ylabel('Corr. Coeff.')
-# # ax.set_title('Proj. 337 - Surrogate SC-ISV')
-# yl = [min([yl1[0],yl2[0]]),max([yl1[1],yl2[1]])]
-# for ax in [ax_337[0],ax_337[2]]:
-#     ax.set_ylim(yl)
-# plt.savefig(PROJ_DIR+'gradients/figures/Corr_from_mean_FCs_proj_337_'+str(n_surr)+'_surrogates.png')
+# Check correlations using surrogate maps
+corrs_r_337_surr = np.zeros((n_surr,n_components))
+corrs_p_337_surr = np.zeros((n_surr,n_components))
+for surr in range(0,n_surr):
+    for grad in range(0,n_components):
+        corrs_r_337_surr[surr,grad], corrs_p_337_surr[surr,grad] = spearmanr(sc_isv_surr[:,surr],grads_337[:,grad],nan_policy='omit')
+corrs_r_337_mean = np.mean(corrs_r_337_surr,axis=0)
+corrs_r_337_lower = np.percentile(corrs_r_337_surr,(100-ci)/2,axis=0)
+corrs_r_337_upper = np.percentile(corrs_r_337_surr,(100+ci)/2,axis=0)
+corrs_r_337_bounds = np.row_stack((corrs_r_337_mean-corrs_r_337_lower,corrs_r_337_upper-corrs_r_337_mean))
+# Illustrate
+ax = ax_337[2]
+ax.errorbar(np.asarray(range(1,n_components+1)),corrs_r_337_mean,corrs_r_337_bounds,ls='none',color='k')
+ax.plot(np.asarray(range(1,n_components+1)),corrs_r_337_mean,marker='.',markersize=10,ls='none',color='k')
+ax.plot([1,n_components],[0,0],'k--')
+ax.set_xticks(range(1,n_components+1))
+yl2 = ax.get_ylim()
+ax.set_xlabel('Component')
+ax.set_ylabel('Corr. Coeff.')
+# ax.set_title('Proj. 337 - Surrogate SC-ISV')
+yl = [min([yl1[0],yl2[0]]),max([yl1[1],yl2[1]])]
+for ax in [ax_337[0],ax_337[2]]:
+    ax.set_ylim(yl)
+plt.savefig(PROJ_DIR+'gradients/figures/Corr_from_mean_FCs_proj_337_'+str(n_surr)+'_surrogates.png')
 
 ############ Alspac FC ############
 print('\n------Alspac Correlations------')
