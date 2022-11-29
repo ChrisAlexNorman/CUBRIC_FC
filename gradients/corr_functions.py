@@ -1,21 +1,83 @@
-# Generate selected figures for SC ISV and FC gradients
-
 import numpy as np
-# import argparse
-# from correlations import get_mean_grads, make_surrogates
 from scipy.stats import spearmanr
 import matplotlib.pyplot as plt
 from brainsmash.mapgen.base import Base
 
-def corr_grad_scisv(sc_isv,fc_grads,n_grads=5):
+def corr_single(sc_isv,fc_grads,n_grads=5):
     """Calculate spearman correlation coeff. of given SC ISV and functional gradients"""
 
-    corrs_r = np.zeros((n_grads))
-    corrs_p = np.zeros((n_grads))
+    corrs_r = [0] * n_grads
+    corrs_p = [0] * n_grads
     for grad in range(0,n_grads):
         corrs_r[grad], corrs_p[grad] = spearmanr(sc_isv, fc_grads[:,grad], nan_policy='omit')
     
     return corrs_r, corrs_p
+
+
+def corr_surrogates(sc_isv_surr,fc_grads,n_grads=5):
+    """Calculate spearman correlation coeff. of given SC ISV surrogates and functional gradients"""
+
+    n_surr = sc_isv_surr.shape[1]
+
+    corrs_r_surr = np.zeros((n_surr,n_grads))
+    corrs_p_surr = np.zeros((n_surr,n_grads))
+    for surr in range(0,n_surr):
+        corrs_r_surr[surr,:], corrs_p_surr[surr,:] = corr_single(sc_isv_surr[:,surr],fc_grads,n_grads=n_grads)
+    
+    return corrs_r_surr, corrs_p_surr
+
+
+def get_mean_grads(grad_fil,standardize=True):
+    """Return mean (and possibly standardized) gradients across subjects"""
+
+    grads = np.load(grad_fil)
+    
+    if standardize:
+        for subj in range(0,np.shape(grads)[0]):
+            for grad_i in range(0,np.shape(grads)[2]):
+                col = grads[subj,:,grad_i]
+                grads[subj,:,grad_i] = (col - np.mean(col)) / np.std(col)
+    
+    mean_grads = np.mean(grads,0)
+
+    return mean_grads
+
+
+def make_surrogates(map_data, dist_mat, n=100, resample=True, n_jobs=1):
+    """Make surrogates maps using brainsmash to remove spatial autocorrelation"""
+
+    base = Base(x=map_data, D=dist_mat, resample=resample, n_jobs=n_jobs)
+
+    surrogates = np.transpose(base(n=n))
+
+    return surrogates
+
+
+def remove_unconnected_rois(FC):
+    """Remove, from both hemispheres, regions that are not connected to any other region, return reduced connectivity matrix and array of unconnected roi indices"""
+
+    nreg = np.shape(FC)[0]
+    ind_zero = np.nonzero(FC.sum(axis=0) == 0)[0]
+
+    # Remove corresponding region from other hemisphere
+    ind_zero_pair = []
+    for a in ind_zero:
+        ind_zero_pair.append(a)
+        if a < nreg / 2:
+            ind_zero_pair.append(a + int(nreg / 2))
+        else:
+            ind_zero_pair.append(a - int(nreg / 2))
+
+    ind_zero_sym = np.unique(np.array(ind_zero_pair))
+    print('Discarding indices: ', ind_zero_sym)
+    valid_ind = np.setdiff1d(np.arange(0, nreg), ind_zero_sym)
+    FC_reduced = FC[np.ix_(valid_ind, valid_ind)]
+
+    return FC_reduced, ind_zero_sym
+
+
+
+
 
 def corr_grad_surrogates_loop_methods(sc_isv,dist_mats,grad_dir,approaches,kernels,thresholds,save_plot=False,space='fsaverage5',parcellation='glasser-360',session='rest',matrix='FC',alignment='procrustes',n_grads=5,n_surrogates=1000):
     """Calculate spearman correlation coeff. of surrogate SC ISV maps and functional gradients calculated from different methods
@@ -184,29 +246,6 @@ def plot_correlations_single(corrs,ci=95):
 
     return fig, ax
 
-def get_mean_grads(grad_fil,standardize=True):
-    """Return mean (and possibly standardized) gradients across subjects"""
-
-    grads = np.load(grad_fil)
-    
-    if standardize:
-        for subj in range(0,np.shape(grads)[0]):
-            for grad_i in range(0,np.shape(grads)[2]):
-                col = grads[subj,:,grad_i]
-                grads[subj,:,grad_i] = (col - np.mean(col)) / np.std(col)
-    
-    mean_grads = np.mean(grads,0)
-
-    return mean_grads
-
-def make_surrogates(map_data, dist_mat, n=100, resample=True, n_jobs=1):
-    """Make surrogates maps using brainsmash to remove spatial autocorrelation"""
-
-    base = Base(x=map_data, D=dist_mat, resample=resample, n_jobs=n_jobs)
-
-    surrogates = np.transpose(base(n=n))
-
-    return surrogates
 
 if __name__ == "__main__":
     # Settings

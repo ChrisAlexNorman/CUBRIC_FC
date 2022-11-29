@@ -1,10 +1,10 @@
 import numpy as np
-import matplotlib.pyplot as plt
 from brainspace.gradient import GradientMaps
-from scipy.stats import spearmanr
+from corr_functions import corr_single, corr_surrogates, remove_unconnected_rois
+from visualisation import basic_one_plot
 
 # Settings
-n_surr = int(10**3)
+n_surr = int(10**4)
 ci = 95
 sig_level = 0.01
 PROJ_DIR = '/home/cnorman/Documents/CUBRIC/ALSPAC/CardiffFC/'
@@ -25,27 +25,6 @@ sc_isv = np.loadtxt(open(sc_isv_fil,"r"),delimiter=' ')
 n_reg = np.shape(sc_isv)[0]
 sc_isv_surr = np.loadtxt(open(sc_isv_surr_fil,"r"),delimiter=',')
 
-def remove_unconnected_rois(FC):
-    """Remove, from both hemispheres, regions that are not connected to any other region, return reduced connectivity matrix and array of unconnected roi indices"""
-
-    nreg = np.shape(FC)[0]
-    ind_zero = np.nonzero(FC.sum(axis=0) == 0)[0]
-
-    # Remove corresponding region from other hemisphere
-    ind_zero_pair = []
-    for a in ind_zero:
-        ind_zero_pair.append(a)
-        if a < nreg / 2:
-            ind_zero_pair.append(a + int(nreg / 2))
-        else:
-            ind_zero_pair.append(a - int(nreg / 2))
-
-    ind_zero_sym = np.unique(np.array(ind_zero_pair))
-    print('Discarding indices: ', ind_zero_sym)
-    valid_ind = np.setdiff1d(np.arange(0, nreg), ind_zero_sym)
-    FC_reduced = FC[np.ix_(valid_ind, valid_ind)]
-
-    return FC_reduced, ind_zero_sym
 
 ############ Proj 337 FC ############
 print('------Proj. 337 Correlations------')
@@ -65,37 +44,20 @@ ind_valid_alspac = np.setdiff1d(np.arange(0, n_reg), ind_zero_337)
 grads_337[np.ix_(ind_valid_alspac, np.arange(0, n_components))] = gm_337.gradients_  
 
 # Get raw correlations
-corrs_r_337 = np.zeros(n_components)
-corrs_p_337 = np.zeros(n_components)
-for grad in range(0,n_components):
-    corrs_r_337[grad], corrs_p_337[grad] = spearmanr(sc_isv,grads_337[:,grad],nan_policy='omit')
+corrs_r_337, corrs_p_337 = corr_single(sc_isv,grads_337,n_grads=n_components)
+corrs_r_337 = np.asarray(corrs_r_337)
+corrs_p_337 = np.asarray(corrs_p_337)
 sig_grads_337 = [ind+1 for ind in range(len(corrs_p_337)) if corrs_p_337[ind] < sig_level]
 print('rho:',corrs_r_337)
 print('p:',corrs_p_337)
 
 # Check correlations using surrogate maps
-corrs_r_337_surr = np.zeros((n_surr,n_components))
-corrs_p_337_surr = np.zeros((n_surr,n_components))
-for surr in range(0,n_surr):
-    for grad in range(0,n_components):
-        corrs_r_337_surr[surr,grad], corrs_p_337_surr[surr,grad] = spearmanr(sc_isv_surr[:,surr],grads_337[:,grad],nan_policy='omit')
-corrs_r_337_mean = np.mean(corrs_r_337_surr,axis=0)
-corrs_r_337_lower = np.percentile(corrs_r_337_surr,(100-ci)/2,axis=0)
-corrs_r_337_upper = np.percentile(corrs_r_337_surr,(100+ci)/2,axis=0)
-corrs_r_337_bounds = np.row_stack((corrs_r_337_mean-corrs_r_337_lower,corrs_r_337_upper-corrs_r_337_mean))
+corrs_r_337_surr, corrs_p_337_surr = corr_surrogates(sc_isv_surr,grads_337,n_grads=n_components)
 
 # Illustrate
-fig_337 = plt.figure(figsize=(4,2))
-plt.plot(range(1,n_components+1),corrs_r_337,'.',color='k',ms=10)
-plt.errorbar(np.asarray(range(1,n_components+1)),corrs_r_337,corrs_r_337_bounds,ls='none',color='k')
-plt.plot(sig_grads_337,[corrs_r_337[grad-1] for grad in sig_grads_337],'.',color='r',ms=10)
-plt.errorbar(sig_grads_337,[corrs_r_337[grad-1] for grad in sig_grads_337],corrs_r_337_bounds[:,[grad-1 for grad in sig_grads_337]],ls='none',color='r')
-plt.plot([1,n_components],[0,0],'k--')
-plt.xticks(range(1,n_components+1))
-plt.xlabel('Component')
-plt.ylabel('Corr. Coef.')
-plt.title('Proj. 337')
-plt.savefig(PROJ_DIR+'gradients/figures/Corr_from_mean_FCs_proj_337_'+str(n_surr)+'_surrogates.png',bbox_inches="tight")
+fig_337, ax_337 = basic_one_plot(corr=corrs_r_337,p=corrs_p_337,corr_surr=corrs_r_337_surr,ci=ci,sig=sig_level)
+ax_337.set_title('Proj. 337')
+fig_337.savefig(PROJ_DIR+'gradients/figures/Corr_from_mean_FCs_proj_337_'+str(n_surr)+'_surrogates.png',bbox_inches="tight")
 
 
 ############ Alspac FC ############
@@ -120,38 +82,21 @@ gm_alspac .fit(fc_mean_alspac)
 # replace unconnected indices
 grads_alspac = np.zeros((n_reg,n_components)) * np.nan
 ind_valid_alspac = np.setdiff1d(np.arange(0, n_reg), ind_zero_alspac)   
-grads_alspac[np.ix_(ind_valid_alspac, np.arange(0, n_components))] = gm_alspac.gradients_  
+grads_alspac[np.ix_(ind_valid_alspac, np.arange(0, n_components))] = gm_alspac.gradients_
 
-# Get correlations
-corrs_r_alspac  = np.zeros(n_components)
-corrs_p_alspac = np.zeros(n_components)
-for grad in range(0,n_components):
-    corrs_r_alspac[grad], corrs_p_alspac[grad] = spearmanr(sc_isv,grads_alspac[:,grad],nan_policy='omit')
+# Get raw correlations
+corrs_r_alspac, corrs_p_alspac = corr_single(sc_isv,grads_alspac,n_grads=n_components)
+corrs_r_alspac = np.asarray(corrs_r_alspac)
+corrs_p_alspac = np.asarray(corrs_p_alspac)
 sig_grads_alspac = [ind+1 for ind in range(len(corrs_p_alspac)) if corrs_p_alspac[ind] < sig_level]
 print('rho:',corrs_r_alspac)
 print('p:',corrs_p_alspac)
 
 # Check correlations using surrogate maps
-corrs_r_alspac_surr = np.zeros((n_surr,n_components))
-corrs_p_alspac_surr = np.zeros((n_surr,n_components))
-for surr in range(0,n_surr):
-    for grad in range(0,n_components):
-        corrs_r_alspac_surr[surr,grad], corrs_p_alspac_surr[surr,grad] = spearmanr(sc_isv_surr[:,surr],grads_alspac[:,grad],nan_policy='omit')
-corrs_r_alspac_mean = np.mean(corrs_r_alspac_surr,axis=0)
-corrs_r_alspac_lower = np.percentile(corrs_r_alspac_surr,(100-ci)/2,axis=0)
-corrs_r_alspac_upper = np.percentile(corrs_r_alspac_surr,(100+ci)/2,axis=0)
-corrs_r_alspac_bounds = np.row_stack((corrs_r_alspac_mean-corrs_r_alspac_lower,corrs_r_alspac_upper-corrs_r_alspac_mean))
+corrs_r_alspac_surr, corrs_p_alspac_surr = corr_surrogates(sc_isv_surr,grads_alspac,n_grads=n_components)
 
 # Illustrate
-fig_alspac = plt.figure(figsize=(4,2))
-plt.plot(range(1,n_components+1),corrs_r_alspac,'.',color='k',ms=10)
-plt.errorbar(np.asarray(range(1,n_components+1)),corrs_r_alspac,corrs_r_alspac_bounds,ls='none',color='k')
-plt.plot(sig_grads_alspac,[corrs_r_alspac[grad-1] for grad in sig_grads_alspac],'.',color='r',ms=10)
-plt.errorbar(sig_grads_alspac,[corrs_r_alspac[grad-1] for grad in sig_grads_alspac],corrs_r_alspac_bounds[:,[grad-1 for grad in sig_grads_alspac]],ls='none',color='r')
-plt.plot([1,n_components],[0,0],'k--')
-plt.xticks(range(1,n_components+1))
-plt.xlabel('Component')
-plt.ylabel('Corr. Coef.')
-plt.title('ALSPAC')
-plt.savefig(PROJ_DIR+'gradients/figures/Corr_from_mean_FCs_ALSPAC_thresh_'+str(fc_threshold)+'_'+str(n_surr)+'_surrogates.png',bbox_inches="tight")
+fig_alspac, ax_alspac = basic_one_plot(corr=corrs_r_alspac,p=corrs_p_alspac,corr_surr=corrs_r_alspac_surr,ci=ci,sig=sig_level)
+ax_alspac.set_title('ALSPAC')
+fig_alspac.savefig(PROJ_DIR+'gradients/figures/Corr_from_mean_FCs_ALSPAC_thresh_'+str(fc_threshold)+'_'+str(n_surr)+'_surrogates.png',bbox_inches="tight")
 
