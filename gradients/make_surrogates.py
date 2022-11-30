@@ -1,17 +1,17 @@
 import numpy as np
-from correlations import make_surrogates
+from corr_functions import make_surrogates
 from brainsmash.mapgen.eval import base_fit
 import matplotlib.pyplot as plt
 
 # Settings
 plt.ioff()
 n_jobs = 10
-n_surrogates = 10**4
+n_surrogates = 5000
 PROJ_DIR = '/home/cnorman/Documents/CUBRIC/ALSPAC/CardiffFC/'
 sc_isv_fil = PROJ_DIR + 'data/structural/isv_sc_z_noarea.csv'
 out_fil_surr = PROJ_DIR+'data/structural/isv_sc_z_noarea_'+str(n_surrogates)+'_surrogates.csv'
-out_fil_lh_vario = PROJ_DIR+'gradients/Figures/sc_isv_lh_'+str(n_surrogates)+'_surrogates_variogram.png'
-out_fil_rh_vario = PROJ_DIR+'gradients/Figures/sc_isv_rh_'+str(n_surrogates)+'_surrogates_variogram.png'
+out_fil_lh_vario = PROJ_DIR+'gradients/figures/sc_isv_lh_'+str(n_surrogates)+'_surrogates_variogram.png'
+out_fil_rh_vario = PROJ_DIR+'gradients/figures/sc_isv_rh_'+str(n_surrogates)+'_surrogates_variogram.png'
 
 # Load SC ISV data
 sc_isv_raw = np.loadtxt(open(sc_isv_fil,"r"),delimiter=' ')

@@ -35,7 +35,7 @@ def loop_grad_methods(subj_dir,indi_file,out_dir,space):
             for threshold in thresholds:
 
                 # Calculate gradients
-                gm, settings = get_gradients(subj_dir,IDs,space=space,approach=approach,kernel=kernel,threshold=threshold)
+                gm, settings = make_gradients(subj_dir,IDs,space=space,approach=approach,kernel=kernel,threshold=threshold)
 
                 # Save results
                 save_path = out_dir + settings["space"] + '_' + settings["atlas"] + '_' + settings["session"] + '_' + settings["matrix"] + '_' + settings["approach"] + '_' + settings["kernel"] + '_' + settings["alignment"] + '_' + str(int(settings["threshold"]*100))
@@ -51,7 +51,7 @@ def single_grad_method(subj_dir,indi_file,out_dir,space):
     IDs = get_subj_IDs(indi_file)
 
     # Calculate gradients
-    gm, settings = get_gradients(subj_dir,IDs,space=space)
+    gm, settings = make_gradients(subj_dir,IDs,space=space)
 
     # Save results
     save_path = out_dir + settings["space"] + '_' + settings["atlas"] + '_' + settings["session"] + '_' + settings["matrix"] + '_' + settings["approach"] + '_' + settings["kernel"] + '_' + settings["alignment"] + '_' + str(int(settings["threshold"]*100))
@@ -60,7 +60,7 @@ def single_grad_method(subj_dir,indi_file,out_dir,space):
     np.save(save_path + '_aligned-grads.npy', np.stack(gm.aligned_))
                 
 
-def get_gradients(subj_dir, IDs, session='rest', space='conte69-32k', atlas='glasser-360', matrix='FC', n_components=10, approach='dm', kernel='normalized_angle', alignment='procrustes', random_state=0, threshold=0.9):
+def make_gradients(subj_dir, IDs, session='rest', space='conte69-32k', atlas='glasser-360', matrix='FC', n_components=10, approach='dm', kernel='normalized_angle', alignment='procrustes', random_state=0, threshold=0.9):
     """Compute gradients from group data.
 
     Parameters

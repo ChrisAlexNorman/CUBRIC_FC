@@ -1,7 +1,8 @@
 import numpy as np
-from scipy.stats import spearmanr
+from scipy.stats import spearmanr, norm
 import matplotlib.pyplot as plt
 from brainsmash.mapgen.base import Base
+from visualisation import plot_correlations_ci
 
 def corr_single(sc_isv,fc_grads,n_grads=5):
     """Calculate spearman correlation coeff. of given SC ISV and functional gradients"""
@@ -76,7 +77,36 @@ def remove_unconnected_rois(FC):
     return FC_reduced, ind_zero_sym
 
 
+def sig_test(val,dist,test='nonpar'):
+    """Return p value against test distribution"""
 
+    if test == 'normal':
+        # Assume data is normally distributed
+        r_surr_mean = np.mean(dist)
+        r_surr_var  = np.var(dist)
+        # Two-tailed test against null normal distribution
+        if val < r_surr_mean:
+            p = 2 * norm(loc=r_surr_mean,scale=r_surr_var**0.5).cdf(val)
+        else:
+            p = 2 * (1-norm(loc=r_surr_mean,scale=r_surr_var**0.5).cdf(val))
+        return p
+
+    elif test == 'nonpar':
+        return np.sum(np.abs(dist) > abs(val)) / len(dist)
+
+    else:
+        raise Exception("Statistical test '"+test+"' not recognized.")
+
+
+def sig_test_surrogates(r, r_surr,test='nonpar'):
+    """Return p values for each gradient"""
+
+    p = [None] * len(r)
+
+    for grad in range(len(r)):
+        p[grad] = sig_test(r[grad],r_surr[:,grad],test=test)
+
+    return p
 
 
 def corr_grad_surrogates_loop_methods(sc_isv,dist_mats,grad_dir,approaches,kernels,thresholds,save_plot=False,space='fsaverage5',parcellation='glasser-360',session='rest',matrix='FC',alignment='procrustes',n_grads=5,n_surrogates=1000):
@@ -148,103 +178,11 @@ def corr_grad_surrogates_loop_methods(sc_isv,dist_mats,grad_dir,approaches,kerne
                         [corrs_r[idx_0,idx_1,idx_2,idx_3,idx_4], corrs_p[idx_0,idx_1,idx_2,idx_3,idx_4]] = spearmanr(sc_isv_surrogates[:,idx_3], mean_grads[:,idx_4], nan_policy='omit')
     
     if save_plot:
-        fig = plot_correlations(corrs_r,approaches=approaches,kernels=kernels,thresholds=thresholds)
+        fig = plot_correlations_ci(corrs_r,approaches=approaches,kernels=kernels,thresholds=thresholds)
 
         plt.savefig(save_plot)
 
     return corrs_r, corrs_p
-
-def plot_correlations(corrs,approaches=None,kernels=None,thresholds=None,ci=95):
-    """Plot mean correlation coefficients with 95% CIs from bootstrapping against surrogate maps for a range of methods and thresholding"""
-
-    n_approaches = np.shape(corrs)[0]
-    n_kernels = np.shape(corrs)[1]
-    n_thresholds = np.shape(corrs)[2]
-    n_surrogates = np.shape(corrs)[3]
-    n_grads = np.shape(corrs)[4]
-
-    colours = ['#007991','#6BA368','#FF784F','#C33C54']
-    perturb = np.linspace(-0.2,0.2,n_thresholds)
-
-    fig, ax_all = plt.subplots(n_approaches,n_kernels, figsize=(6, 6))
-
-    for idx_0 in range(0,n_approaches):
-        for idx_1 in range(0,n_kernels):
-            ax = ax_all[idx_0,idx_1]
-            for idx_2 in range(0,n_thresholds):
-
-                r_means = np.mean(corrs[idx_0,idx_1,idx_2],axis=0)
-                r_lower = np.percentile(corrs[idx_0,idx_1,idx_2],(100-ci)/2,axis=0)
-                r_upper = np.percentile(corrs[idx_0,idx_1,idx_2],(100+ci)/2,axis=0)
-                r_bounds = np.row_stack((r_means-r_lower,r_upper-r_means))
-
-                ax.errorbar(np.asarray(range(1,n_grads+1))+perturb[idx_2],r_means,r_bounds,ls='none',color=colours[idx_2])
-                ax.plot(np.asarray(range(1,n_grads+1))+perturb[idx_2],r_means,marker='.',markersize=10,ls='none',color=colours[idx_2])
-    
-    if approaches==None:
-        approaches = [None]*n_approaches
-        for n in range(0,n_approaches):
-            approaches[n] = 'Approach ' + str(n+1)
-    if kernels==None:
-        kernels = [None]*n_kernels
-        for n in range(0,n_kernels):
-            kernels[n] = 'Kernel ' + str(n+1)
-    if thresholds==None:
-        thresholds = [None]*n_thresholds
-        for n in range(0,n_thresholds):
-            thresholds[n] = 'Threshold ' + str(n+1)
-
-    for idx_0 in range(0,n_approaches):
-        ax_all[idx_0,0].set(ylabel=approaches[idx_0]+"\n Corr. coef.")
-        ylim_max = list(ax_all[idx_0,0].get_ylim())
-        for idx_1 in range(1,n_kernels):
-            ax_all[idx_0,idx_1].set_yticklabels([])
-            ax_all[idx_0,idx_1].set_yticks([])
-            ylim = ax_all[idx_0,idx_1].get_ylim()
-            if ylim[0] < ylim_max[0]:
-                ylim_max[0] = ylim[0]
-            if ylim[1] > ylim_max[1]:
-                ylim_max[1] = ylim[1]
-        for idx_1 in range(0,n_kernels):
-            ax_all[idx_0,idx_1].set_ylim(ylim_max)
-
-    for idx_1 in range(0,n_kernels):
-        ax_all[n_approaches-1,idx_1].set(xlabel='Component')
-        ax_all[0,idx_1].set(title=kernels[idx_1])
-        for idx_0 in range(0,n_approaches-1):
-            ax_all[idx_0,idx_1].set_xticklabels([])
-            ax_all[idx_0,idx_1].set_xticks([])
-
-    for idx_0 in range(0,n_approaches):
-        for idx_1 in range(0,n_kernels):
-            ax_all[idx_0,idx_1].plot([1,n_grads],[0,0],'k--',linewidth=2)
-
-    ax_all[0,0].legend(thresholds)
-
-    return fig, ax
-
-def plot_correlations_single(corrs,ci=95):
-    """Plot mean correlation coefficients with 95% CIs from bootstrapping against surrogate maps"""
-
-    n_surrogates = np.shape(corrs)[0]
-    n_grads = np.shape(corrs)[1]
-
-    colour = ['#000000']
-
-    fig, ax = plt.plot()
-
-    r_means = np.mean(corrs,axis=0)
-    r_lower = np.percentile(corrs,(100-ci)/2,axis=0)
-    r_upper = np.percentile(corrs,(100+ci)/2,axis=0)
-    r_bounds = np.row_stack((r_means-r_lower,r_upper-r_means))
-
-    ax.errorbar(np.asarray(range(1,n_grads+1)),r_means,r_bounds,ls='none',color=colour)
-    ax.plot(np.asarray(range(1,n_grads+1)),r_means,marker='.',markersize=10,ls='none',color=colour)
-
-    ax.set(ylabel="Corr. Coef.")
-    ax.set(xlabel="Component")
-
-    return fig, ax
 
 
 if __name__ == "__main__":
