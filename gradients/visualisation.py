@@ -38,81 +38,104 @@ def basic_one_plot(corr,p=None,corr_surr=None,ci=95,sig=0.01):
     return fig, ax
 
 
-def plot_distribution(test,dist):
+def plot_distribution(test,dist,dist_shuffle=None):
     """Plot test statistic against null distribution from SA-preserving surrogate maps"""
 
     sac = '#377eb8'  # autocorr-preserving
-    # rc = '#e41a1c'  # randomly shuffled
+    rc = '#e41a1c'  # randomly shuffled
     bins = np.linspace(-1, 1, 51)  # correlation b
 
     fig = plt.figure(figsize=(3, 3))
     ax = fig.add_axes([0.2, 0.25, 0.6, 0.6])  # autocorr preserving
-    # ax2 = ax.twinx()  # randomly shuffled
 
     # plot the data
     ax.axvline(test, 0, 0.8, color='k', linestyle='dashed', lw=1)
     ax.hist(dist, bins=bins, color=sac, alpha=1, density=True, clip_on=False, zorder=1)
-    # ax2.hist(naive_brainmap_corrs, bins=bins, color=rc, alpha=0.7,density=True, clip_on=False, zorder=2)
 
     # make the plot nice...
     ax.set_xticks(np.arange(-1, 1.1, 0.5))
     ax.spines['left'].set_color(sac)
     ax.tick_params(axis='y', colors=sac)
-    # ax2.spines['right'].set_color(rc)
-    # ax2.tick_params(axis='y', colors=rc)
     ax.set_ylim(0, 2)
-    # ax2.set_ylim(0, 6)
     ax.set_xlim(-1, 1)
-    [s.set_visible(False) for s in [
-        ax.spines['top'], ax.spines['right']]] # , ax2.spines['top'], ax2.spines['left']]]
-    # ax.text(0.97, 1.1, 'SA-independent', ha='right',va='bottom', color=rc, transform=ax.transAxes)
+    [s.set_visible(False) for s in [ax.spines['top'], ax.spines['right']]]
     ax.text(0.97, 1.03, 'SA-preserving', ha='right', va='bottom',
         color=sac, transform=ax.transAxes)
-    # ax.text(test, 1.65, "T1w/T2w\nmap", ha='center', va='bottom')
     ax.text(0.5, -0.2, "Corr. Coeff.",
         ha='center', va='top', transform=ax.transAxes)
     ax.text(-0.3, 0.5, "Density", rotation=90, ha='left', va='center', transform=ax.transAxes)
 
-    return fig, ax
+    if np.shape(dist_shuffle):
+        ax2 = ax.twinx()  # randomly shuffled
+        ax2.hist(dist_shuffle, bins=bins, color=rc, alpha=0.7,density=True, clip_on=False, zorder=2)
+        ax2.spines['right'].set_color(rc)
+        ax2.tick_params(axis='y', colors=rc)
+        ax2.set_ylim(0, 6)
+        [s.set_visible(False) for s in [ax2.spines['top'], ax2.spines['left']]]
+        ax.text(0.97, 1.1, 'SA-independent', ha='right',va='bottom', color=rc, transform=ax.transAxes)
+        # ax.text(test, 1.65, "T1w/T2w\nmap", ha='center', va='bottom')
+
+    return fig, ax, ax2
 
 
-def plot_methods_grid(r,p,approaches=None,kernels=None,thresholds=None):
+def plot_methods_grid(r,r_surr,p,approaches=None,kernels=None,thresholds=None):
     """Plot mean correlation coefficients, with * for significance, for a range of methods and thresholding"""
 
-    n_approaches = np.shape(r)[0]
-    n_kernels = np.shape(r)[1]
-    n_thresholds = np.shape(r)[2]
-    n_grads = np.shape(r)[3]
+    n_approaches = np.shape(r_surr)[0]
+    n_kernels = np.shape(r_surr)[1]
+    n_thresholds = np.shape(r_surr)[2]
+    n_surr = np.shape(r_surr)[3]
+    n_grads = np.shape(r_surr)[4]
 
     colours = ['#007991','#6BA368','#FF784F','#C33C54']
     perturb = np.linspace(-0.2,0.2,n_thresholds)
 
-    fig, ax_all = plt.subplots(n_approaches,n_kernels, figsize=(6, 6))
+    fig, ax_all = plt.subplots(n_approaches,n_kernels, figsize=(18, 18))
+    plt.rcParams['font.size'] = '14'
 
+    # Plot null distributions
     for idx_0 in range(0,n_approaches):
         for idx_1 in range(0,n_kernels):
             ax = ax_all[idx_0,idx_1]
             for idx_2 in range(0,n_thresholds):
-
+                for idx_grad in range(n_grads):
+                    parts = ax.violinplot(r_surr[idx_0,idx_1,idx_2,:,idx_grad],positions=[idx_grad+perturb[idx_2]+1],showextrema=False,widths=[0.1])
+                    for pc in parts['bodies']:
+                        pc.set_facecolor('#D3D3D3')
+                        pc.set_edgecolor('none')
+                        pc.set_alpha(1)
+    
+    # Overlay calculated correlations
+    for idx_0 in range(0,n_approaches):
+        for idx_1 in range(0,n_kernels):
+            ax = ax_all[idx_0,idx_1]
+            for idx_2 in range(0,n_thresholds):
                 ax.plot(np.asarray(range(1,n_grads+1))+perturb[idx_2],r[idx_0,idx_1,idx_2],ls='none',marker='.',color=colours[idx_2],ms=10)
 
+    # Overlay critical value markers
     for idx_0 in range(0,n_approaches):
         for idx_1 in range(0,n_kernels):
             ax = ax_all[idx_0,idx_1]
             for idx_2 in range(0,n_thresholds):
+                for idx_grad in range(n_grads):
+                    if p[idx_0,idx_1,idx_2,idx_grad] < 0.001:
+                        sig = '***'
+                    elif p[idx_0,idx_1,idx_2,idx_grad] < 0.01:
+                        sig = '**'
+                    elif p[idx_0,idx_1,idx_2,idx_grad] < 0.05:
+                        sig = '*'
+                    else:
+                        sig = ' '
+                    if r[idx_0,idx_1,idx_2,idx_grad] < 0:
+                        valign = 'top'
+                    else:
+                        valign = 'bottom'
+                    ax.text(idx_grad+1+perturb[idx_2],r[idx_0,idx_1,idx_2,idx_grad],sig,ha='center',va=valign)
 
-                idx_crit = np.asarray([idx_grad for idx_grad in range(n_grads) if p[idx_0,idx_1,idx_2,idx_grad] < 0.05])
-                if np.size(idx_crit) > 0:
-                    ax.plot(idx_crit+1+perturb[idx_2],r[idx_0,idx_1,idx_2,idx_crit],ls='none',marker='x',color='r',ms=5)
-                
+                    # idx_crit = np.asarray([idx_grad for idx_grad in range(n_grads) if p[idx_0,idx_1,idx_2,idx_grad] < 0.05])
+                    # if np.size(idx_crit) > 0:
+                    #     ax.plot(idx_crit+1+perturb[idx_2],r[idx_0,idx_1,idx_2,idx_crit],ls='none',marker='x',color='r',ms=5)
 
-                # for idx_grad in range(0,n_grads):
-                #     if p[idx_0,idx_1,idx_2,idx_grad] < 0.05:
-                #         marker = 'x'
-                #     else:
-                #         marker = '.'
-                #     ax.plot(idx_grad+1+perturb[idx_2],r[idx_0,idx_1,idx_2,idx_grad],ls='none',marker=marker,color=colours[idx_2])
-    
     if approaches==None:
         approaches = [None]*n_approaches
         for n in range(0,n_approaches):
@@ -127,7 +150,9 @@ def plot_methods_grid(r,p,approaches=None,kernels=None,thresholds=None):
             thresholds[n] = 'Threshold ' + str(n+1)
 
     for idx_0 in range(0,n_approaches):
-        ax_all[idx_0,0].set(ylabel=approaches[idx_0]+"\n Corr. coef.")
+        ax_all[idx_0,0].set_ylabel(approaches[idx_0]+"\n Corr. coef.",fontsize=14)
+        for label in (ax_all[idx_0,0].get_yticklabels()):
+            label.set_fontsize(14)
         ylim_max = list(ax_all[idx_0,0].get_ylim())
         for idx_1 in range(1,n_kernels):
             ax_all[idx_0,idx_1].set_yticklabels([])
@@ -142,7 +167,9 @@ def plot_methods_grid(r,p,approaches=None,kernels=None,thresholds=None):
 
     for idx_1 in range(0,n_kernels):
         ax_all[n_approaches-1,idx_1].set_xticks(range(1,n_grads+1))
-        ax_all[n_approaches-1,idx_1].set(xlabel='Component')
+        for label in (ax_all[n_approaches-1,idx_1].get_xticklabels()):
+            label.set_fontsize(14)
+        ax_all[n_approaches-1,idx_1].set_xlabel('Component',fontsize=14)
         ax_all[0,idx_1].set(title=kernels[idx_1])
         for idx_0 in range(0,n_approaches-1):
             ax_all[idx_0,idx_1].set_xticklabels([])

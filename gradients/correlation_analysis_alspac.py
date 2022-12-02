@@ -4,7 +4,7 @@ from corr_functions import corr_single, corr_surrogates, remove_unconnected_rois
 from visualisation import plot_methods_grid
 
 ###### SETTINGS ######
-n_surr = 1000
+n_surr = 5000
 n_grads = 6
 space = 'fsaverage5'
 parcellation = 'glasser-360'
@@ -37,6 +37,7 @@ np.fill_diagonal(fc_mean,0)
 
 # Loop over methods
 r_all_methods = np.zeros((len(approaches),len(kernels),len(thresholds),n_grads))
+r_surr_all_methods = np.zeros((len(approaches),len(kernels),len(thresholds),n_surr,n_grads))
 p_all_methods = np.zeros((len(approaches),len(kernels),len(thresholds),n_grads))
 for idx_threshold in range(len(thresholds)):
     threshold = thresholds[idx_threshold]
@@ -78,11 +79,12 @@ for idx_threshold in range(len(thresholds)):
             # Get significance
             p_SA_removed = sig_test_surrogates(r,r_surr,test='normal')
 
-            r_all_methods[idx_approach,idx_kernel,idx_threshold,:] = r
-            p_all_methods[idx_approach,idx_kernel,idx_threshold,:] = p_SA_removed
+            r_all_methods[idx_approach,idx_kernel,idx_threshold] = r
+            r_surr_all_methods[idx_approach,idx_kernel,idx_threshold] = r_surr
+            p_all_methods[idx_approach,idx_kernel,idx_threshold] = p_SA_removed
 
 # Illustrate results
-fig, ax = plot_methods_grid(r_all_methods,p_all_methods,approaches=approaches,kernels=kernels,thresholds=[str(thresh) for thresh in thresholds])
+fig, ax = plot_methods_grid(r_all_methods,r_surr_all_methods,p_all_methods,approaches=approaches,kernels=kernels,thresholds=[str(thresh) for thresh in thresholds])
 
 fig.savefig(PROJ_DIR+'gradients/figures/corr_grid_mean_FC_'+str(n_surr)+'_surrogates.png',bbox_inches="tight")
 
@@ -92,6 +94,7 @@ print('\n------Average Grad Method------')
 
 # Loop over methods
 r_all_methods = np.zeros((len(approaches),len(kernels),len(thresholds),n_grads))
+r_surr_all_methods = np.zeros((len(approaches),len(kernels),len(thresholds),n_surr,n_grads))
 p_all_methods = np.zeros((len(approaches),len(kernels),len(thresholds),n_grads))
 for idx_threshold in range(len(thresholds)):
     threshold = thresholds[idx_threshold]
@@ -115,11 +118,12 @@ for idx_threshold in range(len(thresholds)):
             # Get significance
             p_SA_removed = sig_test_surrogates(r,r_surr,test='normal')
 
-            r_all_methods[idx_approach,idx_kernel,idx_threshold,:] = r
-            p_all_methods[idx_approach,idx_kernel,idx_threshold,:] = p_SA_removed
+            r_all_methods[idx_approach,idx_kernel,idx_threshold] = r
+            r_surr_all_methods[idx_approach,idx_kernel,idx_threshold] = r_surr
+            p_all_methods[idx_approach,idx_kernel,idx_threshold] = p_SA_removed
 
 # Illustrate results
-fig, ax = plot_methods_grid(r_all_methods,p_all_methods,approaches=approaches,kernels=kernels,thresholds=[str(thresh) for thresh in thresholds])
+fig, ax = plot_methods_grid(r_all_methods,r_surr_all_methods,p_all_methods,approaches=approaches,kernels=kernels,thresholds=[str(thresh) for thresh in thresholds])
 
 fig.savefig(PROJ_DIR+'gradients/figures/corr_grid_mean_grads_'+str(n_surr)+'_surrogates.png',bbox_inches="tight")
 
