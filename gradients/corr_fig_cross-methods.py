@@ -17,8 +17,8 @@ thresholds = [0,0.8,0.9]
 random_seed = 0
 
 PROJ_DIR = '/home/cnorman/Documents/CUBRIC/ALSPAC/CardiffFC/'
-sc_isv_fil = PROJ_DIR+'data/structural/isv_sc_z_noarea.csv'
-sc_isv_surr_fil = PROJ_DIR+'data/structural/isv_sc_z_noarea_'+str(n_surr)+'_surrogates.csv'
+sc_isv_fil = PROJ_DIR+'data/structural/alspac_isv_sc_z_noarea.csv'
+sc_isv_surr_fil = PROJ_DIR+'data/structural/alspac_isv_sc_z_noarea_'+str(n_surr)+'_surrogates.csv'
 fc_mean_fil = PROJ_DIR+'data/mica_processed/micapipe/mean_surfs/func/rest/fsaverage5_glasser-360_FC.txt'
 grad_dir = PROJ_DIR+'data/gradients/'+space+'/'
 
@@ -39,8 +39,7 @@ np.fill_diagonal(fc_mean,0)
 r_all_methods = np.zeros((len(approaches),len(kernels),len(thresholds),n_grads))
 r_surr_all_methods = np.zeros((len(approaches),len(kernels),len(thresholds),n_surr,n_grads))
 p_all_methods = np.zeros((len(approaches),len(kernels),len(thresholds),n_grads))
-for idx_threshold in range(len(thresholds)):
-    threshold = thresholds[idx_threshold]
+for idx_threshold, threshold in enumerate(thresholds):
 
     # Apply whole-matrix thresholding
     thresh_val = np.sort(fc_mean.flatten())[int(threshold*n_reg**2)]
@@ -48,10 +47,8 @@ for idx_threshold in range(len(thresholds)):
     # Remove unocnnected rois (if any were removed by thresholding)
     fc_mean, ind_zero = remove_unconnected_rois(fc_mean)
 
-    for idx_approach in range(len(approaches)):
-        approach = approaches[idx_approach]
-        for idx_kernel in range(len(kernels)):
-            kernel = kernels[idx_kernel]
+    for idx_approach, approach in enumerate(approaches):
+        for idx_kernel, kernel in enumerate(kernels):
 
             # Get gradients
             gm = GradientMaps(n_components = n_grads,
@@ -86,7 +83,7 @@ for idx_threshold in range(len(thresholds)):
 # Illustrate results
 fig, ax = plot_methods_grid(r_all_methods,r_surr_all_methods,p_all_methods,approaches=approaches,kernels=kernels,thresholds=[str(thresh) for thresh in thresholds])
 
-fig.savefig(PROJ_DIR+'gradients/figures/corr_grid_mean_FC_'+str(n_surr)+'_surrogates.png',bbox_inches="tight")
+fig.savefig(PROJ_DIR+'gradients/figures/alspac_corr_grid_mean_FC_'+str(n_surr)+'_surrogates.png',bbox_inches="tight")
 
 
 ###### AVERAGE GRAD METHOD ######
@@ -125,5 +122,5 @@ for idx_threshold in range(len(thresholds)):
 # Illustrate results
 fig, ax = plot_methods_grid(r_all_methods,r_surr_all_methods,p_all_methods,approaches=approaches,kernels=kernels,thresholds=[str(thresh) for thresh in thresholds])
 
-fig.savefig(PROJ_DIR+'gradients/figures/corr_grid_mean_grads_'+str(n_surr)+'_surrogates.png',bbox_inches="tight")
+fig.savefig(PROJ_DIR+'gradients/figures/alspac_corr_grid_mean_grads_'+str(n_surr)+'_surrogates.png',bbox_inches="tight")
 

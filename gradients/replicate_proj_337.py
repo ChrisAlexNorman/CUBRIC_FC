@@ -55,7 +55,7 @@ print('p:',corrs_p_337)
 corrs_r_337_surr, corrs_p_337_surr = corr_surrogates(sc_isv_surr,grads_337,n_grads=n_components)
 
 # Illustrate
-fig_337, ax_337 = basic_one_plot(corr=corrs_r_337,p=corrs_p_337,corr_surr=corrs_r_337_surr,ci=ci,sig=sig_level)
+fig_337, ax_337 = basic_one_plot(r=corrs_r_337,p=corrs_p_337,r_surr=corrs_r_337_surr,ci=ci,sig=sig_level)
 ax_337.set_title('Proj. 337')
 fig_337.savefig(PROJ_DIR+'gradients/figures/Corr_from_mean_FCs_proj_337_'+str(n_surr)+'_surrogates.png',bbox_inches="tight")
 
@@ -96,7 +96,7 @@ print('p:',corrs_p_alspac)
 corrs_r_alspac_surr, corrs_p_alspac_surr = corr_surrogates(sc_isv_surr,grads_alspac,n_grads=n_components)
 
 # Illustrate
-fig_alspac, ax_alspac = basic_one_plot(corr=corrs_r_alspac,p=corrs_p_alspac,corr_surr=corrs_r_alspac_surr,ci=ci,sig=sig_level)
+fig_alspac, ax_alspac = basic_one_plot(r=corrs_r_alspac,p=corrs_p_alspac,r_surr=corrs_r_alspac_surr,ci=ci,sig=sig_level)
 ax_alspac.set_title('ALSPAC')
 fig_alspac.savefig(PROJ_DIR+'gradients/figures/Corr_from_mean_FCs_ALSPAC_thresh_'+str(fc_threshold)+'_'+str(n_surr)+'_surrogates.png',bbox_inches="tight")
 

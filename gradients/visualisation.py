@@ -4,34 +4,60 @@ import matplotlib.lines as mlines
 import seaborn as sns
 
 
-def basic_one_plot(corr,p=None,corr_surr=None,ci=95,sig=0.01):
-    """Template function to be replaced with appropriate figure later"""
+def basic_one_plot(r,p=None,r_surr=None):
+    """Plot correlations and significance with null distributions from surrogates"""
 
-    n_grads = len(corr)
+    n_grads = len(r)
 
     fig = plt.figure(figsize=(4,2))
     ax = plt.axes()
 
-    # Add raw correlation values for each grad
-    ax.plot(range(1,n_grads+1),corr,'.',color='k',ms=10)
+    # Plot null distributions
+    if len(r_surr):
+        for idx_grad in range(n_grads):
+            parts = ax.violinplot(r_surr[idx_grad],positions=[idx_grad+1],showextrema=False,widths=[0.3])
+            for pc in parts['bodies']:
+                pc.set_facecolor('#D3D3D3')
+                pc.set_edgecolor('none')
+                pc.set_alpha(1)
 
     # Add errorbars (confidence intervals) from surrogates
-    if np.shape(corr_surr):
-        corr_surr_mean = np.mean(corr_surr,axis=0)
-        corr_surr_lower = np.percentile(corr_surr,(100-ci)/2,axis=0)
-        corr_surr_upper = np.percentile(corr_surr,(100+ci)/2,axis=0)
-        corr_surr_bounds = np.row_stack((corr_surr_mean-corr_surr_lower,corr_surr_upper-corr_surr_mean))
-        ax.errorbar(np.asarray(range(1,n_grads+1)),corr,corr_surr_bounds,ls='none',color='k')
+    # if np.shape(r_surr):
+    #     corr_surr_mean = np.mean(r_surr,axis=0)
+    #     corr_surr_lower = np.percentile(r_surr,(100-ci)/2,axis=0)
+    #     corr_surr_upper = np.percentile(r_surr,(100+ci)/2,axis=0)
+    #     corr_surr_bounds = np.row_stack((corr_surr_mean-corr_surr_lower,corr_surr_upper-corr_surr_mean))
+    #     ax.errorbar(np.asarray(range(1,n_grads+1)),r,corr_surr_bounds,ls='none',color='k')
+
+    # Add raw correlation values for each grad
+    ax.plot(range(1,n_grads+1),r,'.',color='k',ms=10)
+
+    # Overlay critical value markers
+    if len(p):
+        for idx_grad in range(n_grads):
+            if p[idx_grad] < 0.001:
+                sig = '***'
+            elif p[idx_grad] < 0.01:
+                sig = '**'
+            elif p[idx_grad] < 0.05:
+                sig = '*'
+            else:
+                sig = ' '
+            if r[idx_grad] < 0:
+                valign = 'top'
+            else:
+                valign = 'bottom'
+            ax.text(idx_grad+1,r[idx_grad],sig,ha='center',va=valign)
 
     # Colour statistically significant results red
-    if np.shape(p):
-        sig_idx = [inx for inx in range(len(p)) if p[inx] < sig]
-        ax.plot([idx+1 for idx in sig_idx],corr[sig_idx],'.',color='r',ms=10)
-        if np.shape(corr_surr):
-            ax.errorbar([idx+1 for idx in sig_idx],corr[sig_idx],corr_surr_bounds[:,sig_idx],ls='none',color='r')
+    # if np.shape(p):
+    #     sig_idx = [inx for inx in range(len(p)) if p[inx] < sig]
+    #     ax.plot([idx+1 for idx in sig_idx],corr[sig_idx],'.',color='r',ms=10)
+    #     if np.shape(corr_surr):
+    #         ax.errorbar([idx+1 for idx in sig_idx],corr[sig_idx],corr_surr_bounds[:,sig_idx],ls='none',color='r')
 
-    ax.plot([1,n_grads],[0,0],'k--')
-    ax.set_xticks(range(1,n_grads))
+    ax.plot([1,n_grads],[0,0],'--',color=[0.5,0.5,0.5])
+    ax.set_xticks(range(1,n_grads+1))
     ax.set_xlabel('Component')
     ax.set_ylabel('Corr. Coeff.')
 
@@ -183,6 +209,49 @@ def plot_methods_grid(r,r_surr,p,approaches=None,kernels=None,thresholds=None):
     for idx_2 in range(0,n_thresholds):
         markers[idx_2] = mlines.Line2D([],[],ls='none',marker='.',color=colours[idx_2],ms=10)
     ax_all[0,0].legend(markers,thresholds)
+
+    return fig, ax
+
+
+def plot_corr_coeff_variance(r,labels=None,title=None):
+    """Plot correlation coefficients aggregated across first two dimensions."""
+
+    # Aggregate first two dimensions (assumed shape)
+    r = np.moveaxis(np.reshape(r,(np.shape(r)[0]*np.shape(r)[1],np.shape(r)[2],np.shape(r)[3])),0,1)
+
+    n_0 = np.shape(r)[0]
+    n_grads = np.shape(r)[2]
+
+    colours = ['#007991','#6BA368','#FF784F','#C33C54']
+    perturb = np.linspace(-0.2,0.2,n_0)
+
+    fig = plt.figure(figsize=(6, 6))
+    ax = plt.axes()
+    plt.rcParams['font.size'] = '12'
+
+    for i in range(n_0):
+        colour = colours[i]
+        plt.boxplot(r[i,:,:],
+        positions=np.asarray(range(1,n_grads+1))+perturb[i],
+        whis=(5,95),
+        widths=0.1,
+        vert=True,
+        patch_artist=True,
+        boxprops=dict(facecolor=colour, color=colour),
+        capprops=dict(color=colour),
+        whiskerprops=dict(color=colour),
+        flierprops=dict(color=colour, markeredgecolor=colour),
+        medianprops=dict(color='k')
+        )
+    plt.xticks(ticks=range(1,n_grads+1),labels=range(1,n_grads+1))
+    markers = [None] * n_0
+    for idx_2 in range(0,n_0):
+        markers[idx_2] = mlines.Line2D([],[],ls='none',marker='s',color=colours[idx_2],ms=10)
+    plt.legend(markers,labels)
+    plt.xlabel('Component')
+    plt.ylabel('Corr. Coeff.')
+    plt.plot([1+perturb[0],n_grads+perturb[-1]],[0,0],'--',color=[0.5,0.5,0.5])
+    plt.title(title)
 
     return fig, ax
 
