@@ -10,8 +10,6 @@ Structural and functional connectome pre-processing on the ALSPAC dataset was pe
 
 Check the main scripts *pipeline_struct/micapipe_struct_sub.sh* and *pipeline_func/micapipie_func_sub.sh* to see how the pipeline was adapted to be run on the SCW server on the ALSPAC dataset.
 
-**Note:** The filesystem may have undergone changes since pipelines were run, verify paths before attempting to re-run or replicate results!
-
 ## File Outlines
 
 *pipeline_struct* and *pipeline_func* contain the scripts related to structural and functional processing respectively. Completion of both pipelines was (partially) verified using *pipeline_func/verify_FC_file_sizes.sh*. This returns the size of functional directories output by micapipe which are expected to be populated. The output in *pipeline_func/logs/func_dir_sizes.csv* demonstrates that subject 1153's resting state functional processing did not complete. *pipeline_func* also contains two functions for visualising functional connectivity (FC) and timeseries (TS) output matricies.
