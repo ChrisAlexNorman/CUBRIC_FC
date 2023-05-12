@@ -1,4 +1,4 @@
-# Micapipe Pipeline 
+# Pre-processing Pipeline 
 
 **Author:** Chris Norman
 
@@ -34,7 +34,7 @@ Sidecar .json files associated with each scan are found in the same location as 
 
 ## Known Issues
 
-Subject 1153's resting state functional processing fails for an unkown reason (check logs?). The failure occurs when run as part of the complete batch job, or if run in isolation. This is the same subject where r/w permissions were previously blocked to users except the owner c.c1746699 (Rikki). Interestingly their 'movie' session is processed without error.
+Subject 1153's resting state functional processing fails for an unkown reason (check logs?). The failure occurs when run as part of the complete batch job, or if run in isolation. This is the same subject where r/w permissions were previously blocked to users except the owner. Interestingly their 'movie' session is processed without error.
 
 **Re-running subjects:** Micapipe's --force option appears to remove **ALL** previously generated subject outputs, not just overwrite those for the selected module. Therefore it is currently neccessary to re-run **ALL** modules from the beginning. The subfunction *micapipe_cleanup* should be used first to avoid errors but it isn't found on the path using 'singularity exec'. Furthermore, manually removing a subject's output directories still results in errors upon re-running (perhaps because of the content of the (OUTPUT_DIRECTORY)/micapipe/micapipe_processed_sub.csv file?). **Working Solution:** Re-run all a subject's modules, output to a new, temporary directory, then copy the results into main output directory. Note that this bypasses addition to micapipe_processed_sub.csv log file, which may then appear incomplete.
 
