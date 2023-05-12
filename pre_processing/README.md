@@ -2,7 +2,7 @@
 
 **Author:** Chris Norman
 
-**Contact:** NormanC4@cardiff.ac.uk
+**Contact:** chris.alex.norman@outlook.com
 
 **micapipe version:** 0.1.2
 
