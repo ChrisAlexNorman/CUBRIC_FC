@@ -12,7 +12,7 @@ Structural scans and functional resting state and movie scans were selected for 
 
 The [dcm2niix](https://github.com/rordenlab/dcm2niix) tool was used to converted selected DICOM files to NIfTI format by *utils/get_nifti.sh*. These unprocessed .nii files are stored in *data /NIfTI_Data*. The filesystem and naming conventions are, as far as possible, in line with [BIDS specification](https://bids-specification.readthedocs.io/en/stable/). *data/FileIndicators.csv* uses a binary indicator for whether each subject's scans are available in NIfTI form.
 
-Reverse phase encoding resting state scan were used, where available, to unwarp resting state and movie functional scans for each subject. This step was performed by Hikaru Tsujimura (tsujimuraH@cardiff.ac.uk) using the [topup](https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/topup/TopupUsersGuide/) utility. Unwarped data was moved to alongside the original, unwarped NIfTI files.
+Reverse phase encoding resting state scan were used, where available, to unwarp resting state and movie functional scans for each subject using the [topup](https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/topup/TopupUsersGuide/) utility. Unwarped data was moved to alongside the original, unwarped NIfTI files.
 
 The [micapipe toolbox](https://micapipe.readthedocs.io/en/latest/pages/01.whatyouneed/index.html) was used to process structural and functional NIfTI data using established pipelines, see *micapipe/README.md*. The outputs are stored in *data/mica_processed*.
 
